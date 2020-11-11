@@ -1,21 +1,22 @@
 import argparse
 import logging
 import os
+from time import time
 
 import numpy as np
 import torch
 from torch import nn
 from torch.autograd import Variable
-from torch.optim import Adam, SGD
+from torch.optim import SGD
 
 from lib.dataset import get_cifar10_train_loader, AvgMeter, accuracy_topk
 from lib.basic import BasicRebuildNetwork, BasicClassifyHead
 from lib.basic.genotypes import DARTS_V1
 
 
-class DartsRebuildCIFAR(nn.Module):
+class BasicRebuildCIFAR(nn.Module):
     def __init__(self, device, genotype):
-        super(DartsRebuildCIFAR, self).__init__()
+        super(BasicRebuildCIFAR, self).__init__()
 
         self.feature_extractor = BasicRebuildNetwork(genotype).to(device)
         self.classifier = BasicClassifyHead(self.feature_extractor.out_channel, 10).to(device)
@@ -34,7 +35,8 @@ def main():
     parser = argparse.ArgumentParser("CIFAR10")
     parser.add_argument('--seed', type=int, default=19, help='random seed')
 
-    parser.add_argument('--data', type=str, default='./data', help='location of the data corpus')
+    parser.add_argument('--data_path', type=str, default='./data', help='location of the data corpus')
+    parser.add_argument('--log_path', type=str, default=f'./log/cifar{time()}.log', help='log save path')
     parser.add_argument('--batch_size', type=int, default=256, help='batch size')
 
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
@@ -47,7 +49,7 @@ def main():
     parser.add_argument('--weight_decay', type=float, default=3e-4, help='weight decay')
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, filename=args.log_path, filemode='w')
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
     np.random.seed(args.seed)
@@ -57,9 +59,9 @@ def main():
     torch.backends.cudnn.enabled = True
     torch.cuda.manual_seed(args.seed)
 
-    train_queue = get_cifar10_train_loader(args.data, args.batch_size)
+    train_queue = get_cifar10_train_loader(args.data_path, args.batch_size)
 
-    model = DartsRebuildCIFAR(torch.device(f"cuda:{args.gpu}"), args.geno).cuda()
+    model = BasicRebuildCIFAR(torch.device(f"cuda:{args.gpu}"), args.geno).cuda()
     optimizer = SGD(model.parameters(), args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, args.epochs, eta_min=args.learning_rate_min, last_epoch=-1)

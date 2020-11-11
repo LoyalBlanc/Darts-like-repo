@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from time import time
 
 import numpy as np
 import torch
@@ -12,9 +13,9 @@ from lib.dataset import get_cifar10_train_loader, AvgMeter, accuracy_topk
 from lib.basic import BasicSearchNetwork, BasicClassifyHead
 
 
-class DartsSearchCIFAR(nn.Module):
+class BasicSearchCIFAR(nn.Module):
     def __init__(self, device):
-        super(DartsSearchCIFAR, self).__init__()
+        super(BasicSearchCIFAR, self).__init__()
 
         self.feature_extractor = BasicSearchNetwork("softmax").to(device)
         self.classifier = BasicClassifyHead(self.feature_extractor.out_channel, 10).to(device)
@@ -33,7 +34,8 @@ def main():
     parser = argparse.ArgumentParser("CIFAR10")
     parser.add_argument('--seed', type=int, default=19, help='random seed')
 
-    parser.add_argument('--data', type=str, default='./data', help='location of the data corpus')
+    parser.add_argument('--data_path', type=str, default='./data', help='location of the data corpus')
+    parser.add_argument('--log_path', type=str, default=f'./log/cifar{time()}.log', help='log save path')
     parser.add_argument('--batch_size', type=int, default=64, help='batch size')
 
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
@@ -49,7 +51,7 @@ def main():
     parser.add_argument('--arch_weight_decay', type=float, default=1e-3, help='weight decay for arch encoding')
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, filename=args.log_path, filemode='w+')
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
     np.random.seed(args.seed)
@@ -59,9 +61,9 @@ def main():
     torch.backends.cudnn.enabled = True
     torch.cuda.manual_seed(args.seed)
 
-    train_queue = get_cifar10_train_loader(args.data, args.batch_size)
+    train_queue = get_cifar10_train_loader(args.data_path, args.batch_size)
 
-    model = DartsSearchCIFAR(torch.device(f"cuda:{args.gpu}")).cuda()
+    model = BasicSearchCIFAR(torch.device(f"cuda:{args.gpu}")).cuda()
     model_optimizer = SGD([param for name, param in model.named_parameters() if 'alpha' not in name],
                           args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
