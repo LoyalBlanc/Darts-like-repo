@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from lib.operations import ReLUConvBN, ReduceConv, OPS
+from lib.basic.operations import ReLUConvBN, ReduceConv, OPS
 
 
 class BasicRebuildCells(nn.Module):
@@ -66,7 +66,7 @@ class BasicRebuildNetwork(nn.Module):
 
 if __name__ == "__main__":
     from torch.optim import Adam
-    from lib.genotypes import DARTS_V1
+    from lib.basic.genotypes import DARTS_V1
 
     dummy = torch.rand(7, 3, 32, 32).cuda()
     result = torch.rand(7, 256, 8, 8).cuda()

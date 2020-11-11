@@ -1,5 +1,4 @@
-from lib.dataset import get_cifar10_loader
+from lib.cifar_search import main
 
 if __name__ == "__main__":
-    tq, vq = get_cifar10_loader("./data", 64)
-    print(len(tq), next(iter(tq))[0].shape)
+    main()

@@ -2,8 +2,8 @@ import torch
 from torch import nn
 import torch.nn.functional as f
 
-from lib.operations import ReLUConvBN, ReduceConv, OPS, PRIMITIVES
-from lib.genotypes import Genotype
+from lib.basic.operations import ReLUConvBN, ReduceConv, OPS, PRIMITIVES
+from lib.basic.genotypes import Genotype
 
 
 class MixedOp(nn.Module):
@@ -63,6 +63,7 @@ class BasicSearchNetwork(nn.Module):
                 r = False
             self.cells.append(BasicSearchCells(cpp, cp, c, rp, r, steps, multiplier))
             cpp, cp, rp = cp, multiplier * c, r
+        self.out_channel = cp
 
         ops_length = len(PRIMITIVES)
         path_length = steps * (steps + 3) // 2

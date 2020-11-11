@@ -63,7 +63,7 @@ class CIFAR10Policy(object):
         return "AutoAugment CIFAR10 Policy"
 
 
-def get_cifar10_loader(path, batch_size):
+def get_cifar10_train_loader(path, batch_size):
     train_transformer = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -72,20 +72,23 @@ def get_cifar10_loader(path, batch_size):
         transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         Cutout(8)
     ])
+
+    train_data = datasets.CIFAR10(root=path, train=True, download=True, transform=train_transformer)
+    train_queue = DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
+    return train_queue
+
+
+def get_cifar10_valid_loader(path, batch_size):
     valid_transformer = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ])
 
-    train_data = datasets.CIFAR10(root=path, train=True, download=True, transform=train_transformer)
     valid_data = datasets.CIFAR10(root=path, train=False, download=True, transform=valid_transformer)
-
-    train_queue = DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
     valid_queue = DataLoader(valid_data, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=8)
-
-    return train_queue, valid_queue
+    return valid_queue
 
 
 if __name__ == "__main__":
-    tq, vq = get_cifar10_loader("./data", 64)
-    print(len(tq), next(iter(tq))[0].shape)
+    vq = get_cifar10_valid_loader("./data", 64)
+    print(len(vq), next(iter(vq))[0].shape)

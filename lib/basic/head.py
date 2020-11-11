@@ -27,7 +27,7 @@ class BasicClassifyHead(nn.Module):
 
 if __name__ == "__main__":
     from lib.basic import BasicRebuildNetwork
-    from lib.genotypes import DARTS_V1
+    from lib.basic.genotypes import DARTS_V1
 
     dummy = torch.rand(7, 3, 32, 32).cuda()
     model = BasicRebuildNetwork(DARTS_V1).cuda()
