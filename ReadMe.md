@@ -7,7 +7,9 @@ Python >= 3.7, Pytorch >= 1.6
 ```
 
 ## Performance
-*Still training... Oaq*
+| Dataset | Search | Rebuild | Top1 |
+| :----: | :----: | :----: | :----: |
+| CIFAR10 | 50 | 200 | 0.8688 |
 
 ## Related work
 ```

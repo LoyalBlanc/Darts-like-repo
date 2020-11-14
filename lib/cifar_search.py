@@ -35,7 +35,7 @@ def main():
     parser.add_argument('--seed', type=int, default=19, help='random seed')
 
     parser.add_argument('--data_path', type=str, default='./data', help='location of the data corpus')
-    parser.add_argument('--log_path', type=str, default=f'./log/cifar{time()}.log', help='log save path')
+    parser.add_argument('--log_path', type=str, default=f'./log/cifar10_search{time()}.log', help='log save path')
     parser.add_argument('--batch_size', type=int, default=64, help='batch size')
 
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
@@ -46,9 +46,8 @@ def main():
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
     parser.add_argument('--weight_decay', type=float, default=3e-4, help='weight decay')
 
-    parser.add_argument('--arch_learning_rate', type=float, default=3e-3, help='learning rate for arch encoding')
-    parser.add_argument('--arch_lr_gamma', type=float, default=0.9, help='learning rate for arch encoding')
-    parser.add_argument('--arch_weight_decay', type=float, default=1e-3, help='weight decay for arch encoding')
+    parser.add_argument('--alpha_learning_rate', type=float, default=3e-3, help='learning rate for alpha')
+    parser.add_argument('--alpha_weight_decay', type=float, default=1e-3, help='weight decay for alpha')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, filename=args.log_path, filemode='w+')
@@ -63,22 +62,19 @@ def main():
 
     train_queue = get_cifar10_train_loader(args.data_path, args.batch_size)
 
-    model = BasicSearchCIFAR(torch.device(f"cuda:{args.gpu}")).cuda()
+    model = BasicSearchCIFAR(torch.device(f"cuda:0")).cuda()
     model_optimizer = SGD([param for name, param in model.named_parameters() if 'alpha' not in name],
                           args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         model_optimizer, args.epochs, eta_min=args.learning_rate_min, last_epoch=-1)
     alpha_optimizer = Adam([param for name, param in model.named_parameters() if 'alpha' in name],
-                           args.arch_learning_rate, betas=(0.9, 0.999), weight_decay=args.arch_weight_decay)
+                           args.alpha_learning_rate, betas=(0.9, 0.999), weight_decay=args.alpha_weight_decay)
 
     loss_value = AvgMeter()
     top1 = AvgMeter()
-    best_acc = [0, -1]
-    for epoch in range(args.epochs):
-        genotype = model.feature_extractor.genotype()
-        logging.info(f"Epoch [{epoch}/{args.epochs}], lr {scheduler.get_last_lr()[0]}, "
-                     f"Best Accuracy {best_acc[0]:.2%}[{best_acc[1]}]\n{genotype}")
-        for step, (image, label) in enumerate(train_queue):
+    best_acc = [0, 0]
+    for epoch in range(1, args.epochs + 1):
+        for step, (image, label) in enumerate(train_queue, 1):
             model.train()
             n = label.size(0)
             image = Variable(image, requires_grad=False).cuda(non_blocking=True)
@@ -94,8 +90,12 @@ def main():
 
             loss_value.update(step_loss.item(), n)
             top1.update(acc.item(), n)
-            if step % 10 == 0:
-                logging.info(f"Step {step}, loss {np.log(loss_value.avg+1e-16)}, top1 {top1.avg:.2%}")
-        if top1.avg > best_acc:
+            if step % 50 == 0:
+                logging.info(f"Step {step}, loss {np.log(loss_value.avg+1e-16):.4f}, top1 {top1.avg:.2%}")
+        if top1.avg > best_acc[0]:
             best_acc = [top1.avg, epoch]
         scheduler.step()
+
+        genotype = model.feature_extractor.genotype()
+        logging.info(f"Epoch [{epoch}/{args.epochs}], lr {scheduler.get_last_lr()[0]}, "
+                     f"Best Accuracy {best_acc[0]:.2%}[{best_acc[1]}]\n{genotype}")

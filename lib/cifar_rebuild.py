@@ -11,7 +11,7 @@ from torch.optim import SGD
 
 from lib.dataset import get_cifar10_train_loader, AvgMeter, accuracy_topk
 from lib.basic import BasicRebuildNetwork, BasicClassifyHead
-from lib.basic.genotypes import DARTS_V1
+from lib.basic.genotypes import *
 
 
 class BasicRebuildCIFAR(nn.Module):
@@ -36,12 +36,12 @@ def main():
     parser.add_argument('--seed', type=int, default=19, help='random seed')
 
     parser.add_argument('--data_path', type=str, default='./data', help='location of the data corpus')
-    parser.add_argument('--log_path', type=str, default=f'./log/cifar{time()}.log', help='log save path')
-    parser.add_argument('--batch_size', type=int, default=256, help='batch size')
+    parser.add_argument('--log_path', type=str, default=f'./log/cifar10_rebuild{time()}.log', help='log save path')
+    parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
-    parser.add_argument('--epochs', type=int, default=600, help='num of training epochs')
-    parser.add_argument('--geno', type=str, default=DARTS_V1, help='which architecture to use')
+    parser.add_argument('--epochs', type=int, default=200, help='num of training epochs')
+    parser.add_argument('--geno', type=str, default='CIFAR10_V1', help='which architecture to use')
 
     parser.add_argument('--learning_rate', type=float, default=0.025, help='init learning rate')
     parser.add_argument('--learning_rate_min', type=float, default=0.001, help='min learning rate')
@@ -61,19 +61,16 @@ def main():
 
     train_queue = get_cifar10_train_loader(args.data_path, args.batch_size)
 
-    model = BasicRebuildCIFAR(torch.device(f"cuda:{args.gpu}"), args.geno).cuda()
+    model = BasicRebuildCIFAR(torch.device(f"cuda:0"), eval(args.geno)).cuda()
     optimizer = SGD(model.parameters(), args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, args.epochs, eta_min=args.learning_rate_min, last_epoch=-1)
 
     loss_value = AvgMeter()
     top1 = AvgMeter()
-    best_acc = [0, -1]
-    for epoch in range(args.epochs):
-        genotype = model.feature_extractor.genotype()
-        logging.info(f"Epoch [{epoch}/{args.epochs}], lr {scheduler.get_last_lr()[0]}, "
-                     f"Best Accuracy {best_acc[0]:.2%}[{best_acc[1]}]\n{genotype}")
-        for step, (image, label) in enumerate(train_queue):
+    best_acc = [0, 0]
+    for epoch in range(1, args.epochs + 1):
+        for step, (image, label) in enumerate(train_queue, 1):
             model.train()
             n = label.size(0)
             image = Variable(image, requires_grad=False).cuda(non_blocking=True)
@@ -89,6 +86,9 @@ def main():
             top1.update(acc.item(), n)
             if step % 10 == 0:
                 logging.info(f"Step {step}, loss {np.log(loss_value.avg+1e-16)}, top1 {top1.avg:.2%}")
-        if top1.avg > best_acc:
+        if top1.avg > best_acc[0]:
             best_acc = [top1.avg, epoch]
         scheduler.step()
+
+        logging.info(f"Epoch [{epoch}/{args.epochs}], lr {scheduler.get_last_lr()[0]}, "
+                     f"Best Accuracy {best_acc[0]:.2%}[{best_acc[1]}]")
