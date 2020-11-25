@@ -39,7 +39,7 @@ class BasicRebuildCells(nn.Module):
 
 
 class BasicRebuildNetwork(nn.Module):
-    def __init__(self, genotype, stem=16, layers=8, reduce=2):
+    def __init__(self, genotype, stem=16, layers=20, reduce=2):
         super(BasicRebuildNetwork, self).__init__()
 
         self.stem = nn.Sequential(nn.Conv2d(3, stem, 3, padding=1, bias=False), nn.BatchNorm2d(stem))

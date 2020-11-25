@@ -39,7 +39,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=64, help='batch size')
 
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
-    parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
+    parser.add_argument('--epochs', type=int, default=100, help='num of training epochs')
 
     parser.add_argument('--learning_rate', type=float, default=0.005, help='init learning rate')
     parser.add_argument('--learning_rate_min', type=float, default=0.001, help='min learning rate')

@@ -9,15 +9,16 @@ class BasicClassifyHead(nn.Module):
 
         self.features = nn.Sequential(
             nn.ReLU(inplace=True),  # assuming input size 8x8
-            nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False),  # image size = 2 x 2
+            # nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False),  # image size = 2 x 2
             nn.Conv2d(in_channel, 256, 1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
-            nn.Conv2d(256, 768, 2, bias=False),
-            nn.BatchNorm2d(768),
-            nn.ReLU(inplace=True)
+            nn.AdaptiveAvgPool2d(1),
+            # nn.Conv2d(256, 768, 2, bias=False),
+            # nn.BatchNorm2d(768),
+            # nn.ReLU(inplace=True)
         )
-        self.classifier = nn.Linear(768, num_classes)
+        self.classifier = nn.Linear(256, num_classes)
 
     def forward(self, x):
         x = self.features(x)

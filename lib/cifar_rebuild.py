@@ -40,8 +40,8 @@ def main():
     parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
-    parser.add_argument('--epochs', type=int, default=200, help='num of training epochs')
-    parser.add_argument('--geno', type=str, default='CIFAR10_V1', help='which architecture to use')
+    parser.add_argument('--epochs', type=int, default=600, help='num of training epochs')
+    parser.add_argument('--geno', type=str, default='CIFAR10_V2', help='which architecture to use')
 
     parser.add_argument('--learning_rate', type=float, default=0.025, help='init learning rate')
     parser.add_argument('--learning_rate_min', type=float, default=0.001, help='min learning rate')
@@ -84,7 +84,7 @@ def main():
 
             loss_value.update(step_loss.item(), n)
             top1.update(acc.item(), n)
-            if step % 10 == 0:
+            if step % 50 == 0:
                 logging.info(f"Step {step}, loss {np.log(loss_value.avg+1e-16)}, top1 {top1.avg:.2%}")
         if top1.avg > best_acc[0]:
             best_acc = [top1.avg, epoch]
